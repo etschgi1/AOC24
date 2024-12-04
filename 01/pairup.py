@@ -35,7 +35,7 @@ def similarity_score(f, s):
             vs = sd[kf]
         except:
             vs = 0
-        print(kf, vf, vs)
+        # print(kf, vf, vs)
         sim_score += kf * vf * vs
     print(sim_score)
     return sim_score
