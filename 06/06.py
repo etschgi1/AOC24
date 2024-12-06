@@ -13,14 +13,15 @@ class Map():
         self.dim = self.map.shape
         self.visited = np.zeros_like(map_, dtype=int)
         self.guard_pos = (np.where(self.map == "^")[0][0], np.where(self.map == "^")[1][0])
-        print(f"Initial pos: {self.guard_pos} {self.map[self.guard_pos]}")
+        #print(f"Initial pos: {self.guard_pos} {self.map[self.guard_pos]}")
         self.visited[self.guard_pos] = 1
         self.heading = "upward"
         self.turns = {"upward": "right", "right": "downward", "downward": "left", "left": "upward"}
         self.guardfig = {"upward": "^", "right": ">", "left": "<", "downward": "↓"}
-        self.obstical = obstical
+        if obstical != (None, None): 
+            self.obstical = obstical
+            self.map[self.obstical] = "#"
         self.pos_log = [self.guard_pos]
-        self.inLoop = False
 
     def next_pos(self): 
         next_pos = None
@@ -47,14 +48,17 @@ class Map():
         self.visited[next_pos] = 1
         return True
 
-    def check_for_loop(self, last = 2): 
+    def check_for_loop(self): 
         # check if 2 cells repeat!
         if len(self.pos_log) < 2: # not possible in our case!
             if all([self.pos_log[0] == self.pos_log[i] for i in range(self.pos_log)]):
                 return True
             return False
-        if self.pos_log[-last:] in self.pos_log[:-last]:
-            return True
+        if self.pos_log[-2] in self.pos_log[:-2]:
+            positions = [i for i,val in enumerate(self.pos_log[:-2]) if val == self.pos_log[-2]]
+            for pos in positions: 
+                if self.pos_log[-1] == self.pos_log[pos+1]: 
+                    return True
         return False
 
     def count_visited(self):
@@ -65,37 +69,34 @@ class Map():
         self.map[self.guard_pos] = self.guardfig[self.heading]
         print(self.map)
 
-    def run(self):
+    def run(self, loopcheck=False):
         while self.next_pos(): 
+            if loopcheck==True: 
+                if self.check_for_loop(): 
+                    return True
             continue
+        if loopcheck: 
+            return False
         return self.count_visited()
-
-    def runobsticalsearch(self): 
-        loop_counter = 0
-        for i in range(self.dim[0]):
-            for j in range(self.dim[1]):
-                self.obstical = (i,j)
-                if self.map[self.obstical] == "#": # no loop here is already an obstical
-                    continue
-                else: 
-                    self.map[self.obstical] = "#"
-                while self.next_pos():
-                    if self.check_for_loop():
-                        loop_counter += 1
-                        break
-        return loop_counter
-
 
 
 if __name__ == "__main__":
     lines = read_data()
     lines = np.array([list(line.strip()) for line in lines])
     a = Map(lines)
-    b = Map(lines)
     import time
     start = time.time()
     print(f"a: {a.run()}")
     print(f"Took {time.time()-start} s")
+    input("b takes about an hour because I did it badly :DDD (press any key to continue nevertheless)")
     start = time.time()
-    print(f"b: {b.runobsticalsearch()}")
+    loop = 0
+    for i in range(lines.shape[0]):
+        for j in range(lines.shape[1]):
+            print(i,j)
+            b = Map(lines.copy(), (i,j))
+            if b.run(loopcheck=True): 
+                print("loop")
+                loop += 1
+    print(f"b: {loop}")
     print(f"Took {time.time()-start} s")
