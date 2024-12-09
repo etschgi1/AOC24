@@ -43,8 +43,21 @@ def solveable(line, solveB = False):
         if cur_res == res: 
             return True
     if solveB == True: 
-        if any(solveable(x) for x in concat(res, input_)):
-            return True
+        # if res == 7290:
+        #     print("...")
+        # b)
+        ops = ["".join(op) for op in it.product(["+","*", "|"], repeat=len(input_)-1)]
+        for comb in ops: 
+            cur_res = input_[0]
+            for i,c in enumerate(comb): 
+                if c== "*":
+                    cur_res *= input_[i+1]
+                elif c == "+":
+                    cur_res += input_[i+1]
+                else: 
+                    cur_res = int(str(cur_res)+str(input_[i+1]))
+            if cur_res == res: 
+                return True
     return False
 
 def solve(lines, solveB= False): 
