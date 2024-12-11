@@ -49,12 +49,11 @@ def cleverblink(stone, n):
 
 
 def blinkabit(stones, n=25): 
-    # if n==25:
-    #     for i in range(n): 
-    #         stones = blink(stones)
-    #         print(i)
-    #     # print(stones)
-    #     print(f"a: {len(stones)}")
+    if n==25:
+        for i in range(n): 
+            stones = blink(stones)
+        print(f"a: {len(stones)}")
+        return
     sum_ = 0
     for stone in stones:
         sum_ += cleverblink(stone, n)
