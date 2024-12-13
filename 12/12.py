@@ -4,12 +4,15 @@ region_dict = {}
 region_counter = {}
 area_dim = None
 
+dir_dict = {0: (0, 1), 2: (0, -1), 1: (1, 0), 3: (-1, 0)}
+
 
 class Region():
     def __init__(self, Name):
         self.name = Name
         self.letter = Name.split("_")[0]
         self.coords = []
+        self.edge_nodes = []
     
     def add_field(self, a, coord): 
         # print(f"add {a[coord]} {coord} to {self.name}")
@@ -31,7 +34,56 @@ class Region():
         assert circum > 0
         assert area > 0
         return area*circum
+    
+    def getedgeNeighbors(self, node): 
+        out = []
+        for x,y in zip([0,1,0,-1], [1,0,-1,0]): #rdlu
+            neighbor = (node[0]+x,node[1]+y)
+            if neighbor in self.edge_nodes: 
+                out.append(neighbor)
+            else:
+                out.append(None)
+        return out
+    
+    def move(self, start_node): 
+        # move until i have to turn!
+        neighbors_ = self.getedgeNeighbors(start_node)#rdlu
+        # get dir
+        dir_ = None
+        for i, n in enumerate(neighbors_): 
+            if n is not None: 
+                dir_ = dir_dict[i]
+                break
+        assert dir_ is not None
+        # walk until stuck! 
+        while True: 
+            next_ = (start_node[0]+dir_[0], start_node[1]+dir_[1])
+            if next_ in self.edge_nodes: 
+                start_node = next_
+            else: 
+                break # turn!
+        return start_node
 
+
+        
+
+
+    def calcScoreB(self): 
+        area = len(self.coords)
+        #build edge nodes
+        for coord in self.coords:
+            com_neigh = self.number_common_neighbors(coord)
+            if com_neigh != 4:
+                assert coord not in self.edge_nodes
+                self.edge_nodes.append(coord)
+        # start somewhere
+        edge_counter = 0
+        next_node = self.edge_nodes[0]
+        self.edge_nodes.remove(next_node) # remove first!
+        while len(self.edge_nodes): 
+            next_node = self.move(next_node)
+            edge_counter += 1
+        return edge_counter
 
     def __repr__(self):
         return f"{len(self.coords)} {self.coords}"
@@ -44,7 +96,7 @@ def neighbor_indices(grid, tup):
     for x,y in zip([0,0,1,-1], [1,-1,0,0]):
         if i+x>=0 and y+j>=0 and i+x < area_dim[0] and j+y < area_dim[1]:
             n = (i+x, j+y)
-            if grid[n] == " ":
+            if grid is not None and grid[n] == " ":
                 continue
             out.append(n)
     return out
@@ -99,6 +151,13 @@ def calcfence():
     print(f"a) total_fence: {total_fence}")
     return total_fence    
 
+def calcfenceb():
+    total_fence = 0
+    for region in region_dict.values():
+        total_fence += region.calcScoreB()
+    print(f"b) {total_fence}")
+    return total_fence
+
 def printa(a):
     global area_dim
     for i in range(area_dim[0]):
@@ -117,7 +176,8 @@ def buildregions(lines):
         buildarea(a, start)
         if np.all(a == " "):
             break
-    calcfence()
+    # calcfence()
+    calcfenceb()
     # print(region_dict)
 
 if __name__ == "__main__":
