@@ -10,20 +10,19 @@ def read_data(chdir=True):
     return lines
 
 def solve(machine): 
-    A = np.array([[machine["A"][0], machine["B"][0]],[machine["A"][1], machine["B"][1]]])
-    b = np.array([machine["P"][0], machine["P"][1]])
-    sol = np.linalg.solve(A,b)
-    if all([abs(int(x) - x) < prec for x in sol]): 
-        if sol[0]>100 or sol[1]>100: 
-            print("too big heast")
-        # print(machine)
-        return sol
+    # 13 - a) 
+    a_x, b_x, a_y, b_y = machine["A"][0], machine["B"][0], machine["A"][1], machine["B"][1]
+    X, Y = machine["P"][0], machine["P"][1]
+    b_sol = (a_y*X - a_x*Y)/(a_y*b_x - b_y*a_x)
+    a_sol = (X - b_sol*b_x) / a_x
+    if all([abs(int(x) - x) < prec for x in [a_sol, b_sol]]): 
+        return (a_sol, b_sol)
     return None
     # eq 1: A * X_A + B * X_B = X
     # eq 2: A * Y_A + B * Y_B = Y
-    # min -> 3*A+B
     
 def solvea(machines): 
+    # 13 - a) 
     cost = 0
     winable= 0
     for machine in machines: 
@@ -32,13 +31,13 @@ def solvea(machines):
             winable += 1
             
             cost += np.dot(sol, costs)
-        break
+        # break
     print(f"a: {cost}")
     print(f"a: winable {winable}")
 
     return cost
 
-def preproc(lines): 
+def preproc(lines, add_= None): 
     machines = []
     next_machine = {}
     for i, line in enumerate(lines):
@@ -50,6 +49,8 @@ def preproc(lines):
             next_machine["B"] = (x,y)
         elif i%4 == 2: 
             x, y = int(line.split("X=")[-1].split(",")[0]), int(line.split("Y=")[-1])
+            if add_: 
+                x,y = add_ + x, add_ + y
             next_machine["P"] = x,y
         else: 
             machines.append(next_machine)
@@ -65,3 +66,5 @@ if __name__ == "__main__":
     lines = read_data()
     machines = preproc(lines)
     solvea(machines)
+    machinesb = preproc(lines, add_ = 10000000000000)
+    solvea(machinesb)
