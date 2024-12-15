@@ -45,30 +45,20 @@ class Region():
                 out.append(None)
         return out
     
-    def move(self, start_node): 
-        # move until i have to turn!
-        neighbors_ = self.getedgeNeighbors(start_node)#rdlu
-        # get dir
-        dir_ = None
-        for i, n in enumerate(neighbors_): 
-            if n is not None: 
-                dir_ = dir_dict[i]
-                break
-        assert dir_ is not None
-        # walk until stuck! 
-        while True: 
-            next_ = (start_node[0]+dir_[0], start_node[1]+dir_[1])
-            if next_ in self.edge_nodes: 
-                start_node = next_
-            else: 
-                break # turn!
-        return start_node
-
-
-        
-
+    def gettracecount(self, tracelist): 
+        count = 0
+        for trace in tracelist: 
+            new_ = True
+            for e in trace: 
+                if e == 1 and new_: 
+                    new_ = False
+                    count += 1
+                if e == 0: 
+                    new_ = True
+        return count
 
     def calcScoreB(self): 
+        global area_dim
         area = len(self.coords)
         #build edge nodes
         for coord in self.coords:
@@ -77,16 +67,41 @@ class Region():
                 assert coord not in self.edge_nodes
                 self.edge_nodes.append(coord)
         # start somewhere
-        edge_counter = 0
-        next_node = self.edge_nodes[0]
-        self.edge_nodes.remove(next_node) # remove first!
-        while len(self.edge_nodes): 
-            next_node = self.move(next_node)
-            edge_counter += 1
-        return edge_counter
-
+        horizontal_ = sorted(self.coords, key=lambda x: (x[0], x[1]))
+        horizontal = {}
+        for x,y in horizontal_: 
+            try: 
+                horizontal[x] += [y]
+            except KeyError: 
+                horizontal[x] = [y]
+        vertical_ = sorted(self.coords, key=lambda x: (x[1], x[0]))
+        vertical = {}
+        for y,x in vertical_: 
+            try: 
+                vertical[x] += [y]
+            except KeyError: 
+                vertical[x] = [y]
+        # get horizontal edges:
+        hedge_count = 0 
+        vedge_count = 0
+        # find edges start with leftmost
+        for row in horizontal.keys():
+            top_trace, bottom_trace = np.zeros(area_dim[1]), np.zeros(area_dim[1])
+            for col in horizontal[row]:
+                top_trace[col] = 1 if (row-1, col) not in self.coords else 0
+                bottom_trace[col] = 1 if (row+1, col) not in self.coords else 0
+            hedge_count += self.gettracecount([top_trace, bottom_trace])
+        for col in vertical.keys():
+            left_trace, right_trace = np.zeros(area_dim[0]), np.zeros(area_dim[0])
+            for row in vertical[col]: 
+                left_trace[row] = 1 if (row, col-1) not in self.coords else 0
+                right_trace[row] = 1 if (row, col+1) not in self.coords else 0 
+            vedge_count += self.gettracecount([left_trace, right_trace])
+        fences = hedge_count + vedge_count
+        return fences*len(self.coords)
+    
     def __repr__(self):
-        return f"{len(self.coords)} {self.coords}"
+        return f"{self.name}"
 
     
 def neighbor_indices(grid, tup): 
@@ -148,13 +163,15 @@ def calcfence():
     total_fence = 0
     for region in region_dict.values(): 
         total_fence += region.calcRScore()
-    print(f"a) total_fence: {total_fence}")
+    print(f"a) {total_fence}")
     return total_fence    
 
 def calcfenceb():
     total_fence = 0
     for region in region_dict.values():
-        total_fence += region.calcScoreB()
+        reg_res = region.calcScoreB()
+        # print(f"{region} {reg_res}")
+        total_fence += reg_res
     print(f"b) {total_fence}")
     return total_fence
 
@@ -176,7 +193,7 @@ def buildregions(lines):
         buildarea(a, start)
         if np.all(a == " "):
             break
-    # calcfence()
+    calcfence()
     calcfenceb()
     # print(region_dict)
 
