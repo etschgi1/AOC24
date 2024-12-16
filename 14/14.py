@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import functools
 
 grid_dim = (103, 101) # (7,11)
 
@@ -16,7 +18,7 @@ def preprocrobots(lines):
     for line in lines: 
         pos, vel = line.split(" ")[0][2:], line.split(" ")[1][2:]
         pos, vel = [int(x) for x in pos.split(",")], [int(x) for x in vel.split(",")]
-        robots.append((pos, vel))
+        robots.append((tuple(pos), tuple(vel)))
     return robots
 
 def robotstep(robot, n=1):
@@ -47,54 +49,7 @@ def printfield(robots, timesteps):
     print()
     
 
-def neighbor(coords, xcord,ycord): 
-    pos = [(xcord+x_, ycord+y_) for x_,y_ in zip([0,0,1,-1], [1,-1,0,0])]
-    count = 0
-    for p in pos: 
-        if p in coords: 
-            count+=1
-    return count
-
 def simrobots(robots, timesteps):
-    # printfield(robots,0)
-    if timesteps is None: 
-        r2 = []
-        robdis = []
-        t_range = range(10000)
-        for t_ in t_range:
-            for i, robot in enumerate(robots): 
-                robots[i] = robotstep(robot)
-            robdist = 0
-            x_coords = [x[0][0] for x in robots]
-            y_coords = [x[0][1] for x in robots]
-            coords = [(x,y) for x,y in zip(x_coords, y_coords)]
-            for x1,y1 in zip(x_coords, y_coords): 
-                robdist += neighbor(coords, x1,y1)
-            # calc dist
-            # m = (np.array(x_coords).mean(), np.array(y_coords).mean())
-            # r2.append(sum([(x-m[0])**2 + (x-m[1])**2 for x,y in zip(x_coords, y_coords)]))
-            robdis.append(robdist)
-
-        plt.scatter(t_range, robdis)
-        min_arg = np.argmin(np.array(robdis))
-        print(min_arg)
-        # plt.scatter(t_range, y_var)
-        # plt.scatter(t_range, np.array(x_var)*np.array(y_var))
-        plt.savefig("var.png")
-        plt.close()
-        return min_arg
-        return
-
-    if timesteps > 200: 
-        # plot stuff
-        for i,robot in enumerate(robots): 
-            robots[i] = robotstep(robot, timesteps)
-        grid = getgrid(robots)
-        plt.imshow(grid)
-        plt.savefig("heat.png")
-        print("heatmap")
-        return
-    
     for t in range(timesteps):
         for i, robot in enumerate(robots): 
             robots[i] = robotstep(robot)
@@ -113,13 +68,45 @@ def simrobots(robots, timesteps):
     res = q1 * q2 * q3 * q4
     print(f"a: {int(res)}")
     return res
-    
+
+@functools.cache
+def getGrids(robots, Max_time): 
+    grids = [getgrid(robots)]
+    for timestep in range(Max_time): 
+        new_robots = []
+        for i, robot in enumerate(robots):
+            new_robots.append(robotstep(robot))
+        robots = tuple(new_robots)
+        grids.append(getgrid(robots))
+    return grids
+
+def edge_score(grids):
+    scores = [] 
+    for i, grid in enumerate(grids):
+        scores.append(1)
+        for row in grid:
+            c = 1
+            for e in row: 
+                if e > 0: 
+                    scores[-1] *= c
+                    c *= 2
+                else: 
+                    c = 1
+    from math import log10
+    scores = [log10(s) if s > 0 else 0 for s in scores]
+    plt.scatter(range(len(scores)), scores)
+    plt.savefig("scores.png")
+    arg_max = np.argmax(scores)
+    print(f"b: {arg_max}")
+    return arg_max
+                    
+                
 
 
 if __name__ == "__main__":
     lines = read_data()
     robots = preprocrobots(lines)
     simrobots(robots.copy(), 100)
-    argmin = simrobots(robots.copy(), None)
-    simrobots(robots.copy(), argmin)
+    grids = getGrids(tuple(robots.copy()), 10000)
+    edge_score(grids)
 
